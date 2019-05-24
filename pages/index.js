@@ -38,7 +38,7 @@ function init(setDimensions, setContext) {
 
 function getDrawFunction() {
 
-    let pieceParams = generatePieceParameters(1);
+    let pieceParams = generatePieceParameters(2);
 
     return function draw(dimensions, context) {
         context.clearRect(0,0,dimensions.width,dimensions.height);
@@ -82,13 +82,39 @@ function drawPieces(pieceParams, dimensions, context) {
 
         physicsLogic(piece, dimensions);
     }
+    collisionLogic(dimensions, pieceParams);
 }
 
-function physicsLogic(piece, dimensions) {
+function physicsLogic(piece, dimensions, pieceParams) {
     boundaryLogic(piece, dimensions);
     gravityLogic(piece);
     moveMentLogic(piece);
-    // collisionLogic(piece);
+    collisionLogic(piece, dimensions, pieceParams);
+}
+
+function collisionLogic(dimensions, pieces) {
+    if (pieces[0]) {
+        let w = dimensions.width;
+        let h = dimensions.height;
+        let r = ((dimensions.width**2 + dimensions.height**2)**(0.5)) * (pieces[0].radius);
+    
+        for (let p1 of pieces) {
+            for (let p2 of pieces) {
+                if (p1.id != p2.id){
+                    // If the 2 circles are colliding
+                    if ((((p1.x*w - p2.x*w)**2 + (p1.y*h - p2.y*h)**2)**(0.5)) < 2*r) {
+                        handleCollision(p1, p2)
+                    }
+                }
+            }
+        }
+    }
+}
+
+function handleCollision(p1, p2) {
+    // momentum is ALWAYS conserved
+    // assume a unit mass (1)
+    console.log("piece collision");
 }
 
 function moveMentLogic(piece) {
@@ -114,14 +140,17 @@ function boundaryLogic(piece, dimensions) {
 
 function generatePieceParameters(n) {
     let result = [];
+    let idCount = 0;
     for (let x = 0; x < n; x++){
         result.push({
+            id: idCount,
             x: Math.random(),
             y: Math.random(),
             dx: Math.random(),
             dy: Math.random(),
             radius: 0.02
         })
+        idCount += 1;
     }
     return result;
 }
