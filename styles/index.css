@@ -1,3 +1,14 @@
 body{
     overflow: hidden;
 }
+.github{
+    position: absolute;
+    left: 50%;
+    top: 93%;
+    z-index: 1000;
+    transform: translate(-50%, -50%);
+}
+.github a:focus{
+    outline: none;
+    box-shadow: none;
+}
