@@ -11,7 +11,6 @@ const Index = () => {
     const draw = getDrawFunction();
     useEffect(() => init(setDimensions, setContext), []);
     useInterval(() => draw(dimensions, context), 10);
-    console.log(dimensions);
     return (
         <Base>
             <canvas id="splashCanvas" width={dimensions.width} height={dimensions.height}></canvas>
@@ -39,7 +38,7 @@ function init(setDimensions, setContext) {
 
 function getDrawFunction() {
 
-    let pieceParams = generatePieceParameters(25);
+    let pieceParams = generatePieceParameters(1);
 
     return function draw(dimensions, context) {
         context.clearRect(0,0,dimensions.width,dimensions.height);
@@ -66,38 +65,14 @@ function drawBorder(dimensions, context) {
     context.closePath();
 }
 
-function energyColor(energy) {
-    const colors = [
-        "#000000",
-        "#1C0701",
-        "#380E02",
-        "#551503",
-        "#711C04",
-        "#8D2305",
-        "#AA2A06",
-        "#C63107",
-        "#E23808",
-        "#FF400A"        
-    ];
-    return colors[energy];
-}
-
-function loseEnergy(piece) {
-    if (piece.energy > 0){
-        piece.energy -= 1;
-        piece.dx = piece.dx / 1.2;
-        piece.dy = piece.dy / 1.2;
-    }
-}
-
 function drawPieces(pieceParams, dimensions, context) {
     for (let piece of pieceParams){
         context.beginPath();
-        context.fillStyle = energyColor(piece.energy);
+        context.fillStyle = "#287740";
         context.arc(
             piece.x * dimensions.width,
             piece.y * dimensions.height,
-            20,
+            ((dimensions.width**2 + dimensions.height**2)**(0.5)) * (piece.radius),
             0,
             Math.PI*2,
             true
@@ -105,25 +80,36 @@ function drawPieces(pieceParams, dimensions, context) {
         context.closePath();
         context.fill();
 
-        // Boundary logic
-        if (piece.x <= 0 || piece.x >= 1) {
-            piece.dx = - piece.dx;
-            loseEnergy(piece);
-        }
-        if (piece.y <= 0 || piece.y >= 1) {
-            piece.dy = - piece.dy;
-            loseEnergy(piece);
-        }
-
-        piece.x += piece.dx / 100;
-        piece.y += piece.dy / 100;
-
-        if (piece.x < 0) piece.x = 0;
-        if (piece.x > 1) piece.x = 1;
-        if (piece.y < 0) piece.y = 0;
-        if (piece.y > 1) piece.y = 1;
-
+        physicsLogic(piece, dimensions);
     }
+}
+
+function physicsLogic(piece, dimensions) {
+    boundaryLogic(piece, dimensions);
+    gravityLogic(piece);
+    moveMentLogic(piece);
+    // collisionLogic(piece);
+}
+
+function moveMentLogic(piece) {
+    piece.x += piece.dx / 100;
+    piece.y += piece.dy / 100;
+}
+
+function gravityLogic(piece) {
+    let gravity = 0.1;
+    piece.dy += gravity;
+}
+
+function boundaryLogic(piece, dimensions) {
+    let rad = ((dimensions.width**2 + dimensions.height**2)**(0.5)) * (piece.radius);
+    if (piece.x * dimensions.width - rad <= 0 || piece.x * dimensions.width + rad >= dimensions.width) piece.dx = - piece.dx;
+    if (piece.y * dimensions.height - rad <= 0 || piece.y * dimensions.height + rad >= dimensions.height) piece.dy = - piece.dy;
+
+    if (piece.x * dimensions.width - rad < 0) piece.x = 0 + rad / dimensions.width;
+    if (piece.x * dimensions.width + rad > dimensions.width) piece.x = 1 - rad / dimensions.width;
+    if (piece.y * dimensions.height - rad < 0) piece.y = 0 + rad / dimensions.height;
+    if (piece.y * dimensions.height + rad > dimensions.height) piece.y = 1 - rad / dimensions.height;
 }
 
 function generatePieceParameters(n) {
@@ -134,7 +120,7 @@ function generatePieceParameters(n) {
             y: Math.random(),
             dx: Math.random(),
             dy: Math.random(),
-            energy: 10
+            radius: 0.02
         })
     }
     return result;
