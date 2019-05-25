@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useInterval } from "../js/Hooks";
 import "../styles/index.css";
 import { randInRange } from "../js/Util";
+import { genLine } from "../js/Line";
 
 
 const Index = () => {
@@ -89,7 +90,7 @@ function physicsLogic(piece, dimensions, pieceParams) {
     boundaryLogic(piece, dimensions);
     gravityLogic(piece);
     moveMentLogic(piece);
-    collisionLogic(piece, dimensions, pieceParams);
+    //collisionLogic(piece, dimensions, pieceParams);
 }
 
 function collisionLogic(dimensions, pieces) {
@@ -129,6 +130,8 @@ function gravityLogic(piece) {
 
 function boundaryLogic(piece, dimensions) {
     let rad = ((dimensions.width**2 + dimensions.height**2)**(0.5)) * (piece.radius);
+
+    // Normal walls
     if (piece.x * dimensions.width - rad <= 0 || piece.x * dimensions.width + rad >= dimensions.width) piece.dx = - piece.dx;
     if (piece.y * dimensions.height - rad <= 0 || piece.y * dimensions.height + rad >= dimensions.height) piece.dy = - piece.dy;
 
@@ -136,6 +139,27 @@ function boundaryLogic(piece, dimensions) {
     if (piece.x * dimensions.width + rad > dimensions.width) piece.x = 1 - rad / dimensions.width;
     if (piece.y * dimensions.height - rad < 0) piece.y = 0 + rad / dimensions.height;
     if (piece.y * dimensions.height + rad > dimensions.height) piece.y = 1 - rad / dimensions.height;
+
+    // Corner walls
+
+    // Center walls
+
+    // General line boundary logic
+        let lines = [];
+        // Define the 4 normal walls as lines
+        lines.push(getLine(0,0,0,1));
+        lines.push(genLine(0,0,1,0));
+        lines.push(genLine(1,0,1,1));
+        lines.push(genLine(0,1,1,1));
+        // Define the 2 corner walls as lines
+        lines.push(getLine(0,0.5,0.15,1));
+        lines.push(getLine(0.85,1,1,0.5));
+        // Define the 2 central walls as lines
+        lines.push(getLine(0.4,1,0.5,0.75));
+        lines.push(getLine(0.5,0.75,0.6,1));
+
+        // Define laws for detecting collision with general line
+        handleGeneralLineCollision(piece, lines);
 }
 
 function generatePieceParameters(n) {
