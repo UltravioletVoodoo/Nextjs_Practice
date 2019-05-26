@@ -3,18 +3,37 @@ import { useEffect, useState } from "react";
 import { useInterval } from "../js/Hooks";
 import "../styles/index.css";
 import { randInRange } from "../js/Util";
-import { genLine } from "../js/Line";
+import { Ball, distance, distanceNextFrame } from "../js/Ball";
+
+
+// Globals
+let objArray = [];
+let paused = false;
+let bumped = false;
+
+let leftHeld = false;
+let upHeld = false;
+let rightHeld = false;
+let downHeld = false;
+
+let gravityOn = false;
+let dragOn = false;
+let clearCanv = true;
+
+let width = 10;
+let height = 10;
+
+let ctx = undefined;
+
+
 
 
 const Index = () => {
-    const [dimensions, setDimensions] = useState({width: 10, height: 10});
-    const [context, setContext] = useState(undefined);
-    const draw = getDrawFunction();
-    useEffect(() => init(setDimensions, setContext), []);
-    useInterval(() => draw(dimensions, context), 10);
+    const [dimensions, setDimensions] = useState(undefined);
+    useEffect(() => init(setDimensions), []);
     return (
         <Base>
-            <canvas id="splashCanvas" width={dimensions.width} height={dimensions.height}></canvas>
+            <canvas id="splashCanvas" width={width} height={height}></canvas>
             <div className="github">
                 <a href="https://github.com/UltravioletVoodoo/Personal_Website" target="_blank">
                     <img src="/static/img/GitHub-Mark-32px.png"></img>
@@ -24,159 +43,213 @@ const Index = () => {
     );
 };
 
-function init(setDimensions, setContext) {
+function init(setDimensions) {
     function resize() {
-        setDimensions({
-            width: window.innerWidth,
-            height: window.innerHeight - document.getElementById("navbar").offsetHeight
-        });
+        width = window.innerWidth;
+        height = (window.innerHeight - document.getElementById("navbar").offsetHeight) * 0.85;
+        setDimensions({width: width, height: height});
     }
     resize();
-    setContext(splashCanvas.getContext('2d'));
+    splashCanvas.style.backgroundColor = "#303030";
+    ctx = splashCanvas.getContext('2d');
+
+    // Listeners
     window.addEventListener("resize", resize);
+    window.addEventListener("keydown", keyDownHandler);
+    window.addEventListener("keyup", keyUpHandler);
+    draw();
+
     return () => window.removeEventListener("resize", resize);
 }
 
-function getDrawFunction() {
 
-    let pieceParams = generatePieceParameters(2);
+function draw() {
+        if(clearCanv) ctx.clearRect(0, 0, width, height);
 
-    return function draw(dimensions, context) {
-        context.clearRect(0,0,dimensions.width,dimensions.height);
+        if (!paused) {
+            arrowControls();
+            if (gravityOn) {
+                applyGravity();
+                applyDrag();
+            }
+            moveObjects();
+        }
 
-        drawBorder(dimensions, context);
-        drawPieces(pieceParams, dimensions, context);
+        drawObjects();
+        staticCollision();
+        ballCollision();
+        requestAnimationFrame(draw);
+}
+
+function keyDownHandler(event) {
+    switch (event.keyCode) {
+        case 67: //c
+            objArray[objArray.length] = new Ball(ctx, width, height);
+            console.log("Added new ball");
+            break;
+        case 80: //p
+            paused = !paused;
+            break;
+        case 71: //g
+            gravityOn = !gravityOn;
+            dragOn = !dragOn;
+            break;
+        case 65: //a
+            leftHeld = true;
+            break;
+        case 87: //w
+            upHeld = true;
+            break;
+        case 68: //d
+            rightHeld = true;
+            break;
+        case 83: //s
+            downHeld = true;
+            break;
+        case 82: //r
+            objArray = [];
+            break;
+        case 75: //k
+            clearCanv = !clearCanv;
+            break;
+        default:
+            break;
     }
 }
 
-function drawBorder(dimensions, context) {
-    context.beginPath();
-    context.fillStyle = "#282828";
-    context.moveTo(0, dimensions.height);
-    context.lineTo(0, dimensions.height * 0.5);
-    context.lineTo(dimensions.width * 0.15, dimensions.height);
-    context.moveTo(dimensions.width * 0.4, dimensions.height);
-    context.lineTo(dimensions.width * 0.5, dimensions.height * 0.75);
-    context.lineTo(dimensions.width * 0.6, dimensions.height);
-    context.moveTo(dimensions.width * 0.85, dimensions.height);
-    context.lineTo(dimensions.width, dimensions.height * 0.5);
-    context.lineTo(dimensions.width, dimensions.height);
-    context.fill();
-    context.stroke();
-    context.closePath();
-}
-
-function drawPieces(pieceParams, dimensions, context) {
-    for (let piece of pieceParams){
-        context.beginPath();
-        context.fillStyle = "#287740";
-        context.arc(
-            piece.x * dimensions.width,
-            piece.y * dimensions.height,
-            ((dimensions.width**2 + dimensions.height**2)**(0.5)) * (piece.radius),
-            0,
-            Math.PI*2,
-            true
-        );
-        context.closePath();
-        context.fill();
-
-        physicsLogic(piece, dimensions);
+function keyUpHandler(event) {
+    switch (event.keyCode) {
+        case 65: //a
+            leftHeld = false;
+            break;
+        case 87: //w
+            upHeld = false;
+            break;
+        case 68: //d
+            rightHeld = false;
+            break;
+        case 83: //s
+            downHeld = false;
+            break;
+        default:
+            break;
     }
-    collisionLogic(dimensions, pieceParams);
 }
 
-function physicsLogic(piece, dimensions, pieceParams) {
-    boundaryLogic(piece, dimensions);
-    gravityLogic(piece);
-    moveMentLogic(piece);
-    //collisionLogic(piece, dimensions, pieceParams);
+function arrowControls() {
+    if (leftHeld) {
+        for (let obj of objArray) {
+            obj.dx -= 0.3;
+        }
+    }
+    if (upHeld) {
+        for (let obj of objArray) {
+            obj.dy -= 0.3;
+        }
+    }
+    if (rightHeld) {
+        for (let obj of objArray) {
+            obj.dx += 0.3;
+        }
+    }
+    if (downHeld) {
+        for (let obj of objArray) {
+            obj.dy += 0.3;
+        }
+    }
 }
 
-function collisionLogic(dimensions, pieces) {
-    if (pieces[0]) {
-        let w = dimensions.width;
-        let h = dimensions.height;
-        let r = ((dimensions.width**2 + dimensions.height**2)**(0.5)) * (pieces[0].radius);
-    
-        for (let p1 of pieces) {
-            for (let p2 of pieces) {
-                if (p1.id != p2.id){
-                    // If the 2 circles are colliding
-                    if ((((p1.x*w - p2.x*w)**2 + (p1.y*h - p2.y*h)**2)**(0.5)) < 2*r) {
-                        handleCollision(p1, p2)
-                    }
-                }
+function wallCollision(ball) {
+    if (ball.x - ball.radius + ball.dx < 0 ||
+        ball.x + ball.radius + ball.dx > width) {
+        ball.dx = -ball.dx;
+    }
+    if (ball.y - ball.radius + ball.dy < 0 ||
+        ball.y + ball.radius + ball.dy > height) {
+        ball.dy = -ball.dy;
+    }
+    if (ball.y + ball.radius > height) {
+        ball.y = height - ball.radius;
+    }
+    if (ball.y - ball.radius < 0) {
+        ball.y = ball.radius;
+    }
+    if (ball.x + ball.radius > width) {
+        ball.x = width - ball.radius;
+    }
+    if (ball.x - ball.radius < 0) {
+        ball.x = ball.radius;
+    }
+}
+
+function ballCollision() {
+    for (let obj1 in objArray) {
+        for (let obj2 in objArray) {
+            if (obj1 !== obj2 && distanceNextFrame(objArray[obj1], objArray[obj2]) <= 0) {
+                let theta1 = objArray[obj1].angle();
+                let theta2 = objArray[obj2].angle();
+                let phi = Math.atan2(objArray[obj2].y - objArray[obj1].y, objArray[obj2].x - objArray[obj1].x);
+                let m1 = objArray[obj1].mass;
+                let m2 = objArray[obj2].mass;
+                let v1 = objArray[obj1].speed();
+                let v2 = objArray[obj2].speed();
+
+                let dx1F = (v1 * Math.cos(theta1 - phi) * (m1-m2) + 2*m2*v2*Math.cos(theta2 - phi)) / (m1+m2) * Math.cos(phi) + v1*Math.sin(theta1-phi) * Math.cos(phi+Math.PI/2);
+                let dy1F = (v1 * Math.cos(theta1 - phi) * (m1-m2) + 2*m2*v2*Math.cos(theta2 - phi)) / (m1+m2) * Math.sin(phi) + v1*Math.sin(theta1-phi) * Math.sin(phi+Math.PI/2);
+                let dx2F = (v2 * Math.cos(theta2 - phi) * (m2-m1) + 2*m1*v1*Math.cos(theta1 - phi)) / (m1+m2) * Math.cos(phi) + v2*Math.sin(theta2-phi) * Math.cos(phi+Math.PI/2);
+                let dy2F = (v2 * Math.cos(theta2 - phi) * (m2-m1) + 2*m1*v1*Math.cos(theta1 - phi)) / (m1+m2) * Math.sin(phi) + v2*Math.sin(theta2-phi) * Math.sin(phi+Math.PI/2);
+
+                objArray[obj1].dx = dx1F;                
+                objArray[obj1].dy = dy1F;                
+                objArray[obj2].dx = dx2F;                
+                objArray[obj2].dy = dy2F;
+            }            
+        }
+        wallCollision(objArray[obj1]);
+    }
+}
+
+function staticCollision() {
+    for (let obj1 in objArray) {
+        for (let obj2 in objArray) {
+            if (obj1 !== obj2 && distance(objArray[obj1], objArray[obj2]) < objArray[obj1].radius + objArray[obj2].radius) {
+                let theta = Math.atan2((objArray[obj1].y - objArray[obj2].y), (objArray[obj1].x - objArray[obj2].x));
+                let overlap = objArray[obj1].radius + objArray[obj2].radius - distance (objArray[obj1], objArray[obj2]);
+                let smallerObject = objArray[obj1].radius < objArray[obj2].radius ? obj1 : obj2
+                objArray[smallerObject].x -= overlap * Math.cos(theta);
+                objArray[smallerObject].y -= overlap * Math.sin(theta);
             }
         }
     }
 }
 
-function handleCollision(p1, p2) {
-    // momentum is ALWAYS conserved
-    // assume a unit mass (1)
-    console.log("piece collision");
-}
-
-function moveMentLogic(piece) {
-    piece.x += piece.dx / 100;
-    piece.y += piece.dy / 100;
-}
-
-function gravityLogic(piece) {
-    let gravity = 0.1;
-    piece.dy += gravity;
-}
-
-function boundaryLogic(piece, dimensions) {
-    let rad = ((dimensions.width**2 + dimensions.height**2)**(0.5)) * (piece.radius);
-
-    // Normal walls
-    if (piece.x * dimensions.width - rad <= 0 || piece.x * dimensions.width + rad >= dimensions.width) piece.dx = - piece.dx;
-    if (piece.y * dimensions.height - rad <= 0 || piece.y * dimensions.height + rad >= dimensions.height) piece.dy = - piece.dy;
-
-    if (piece.x * dimensions.width - rad < 0) piece.x = 0 + rad / dimensions.width;
-    if (piece.x * dimensions.width + rad > dimensions.width) piece.x = 1 - rad / dimensions.width;
-    if (piece.y * dimensions.height - rad < 0) piece.y = 0 + rad / dimensions.height;
-    if (piece.y * dimensions.height + rad > dimensions.height) piece.y = 1 - rad / dimensions.height;
-
-    // Corner walls
-
-    // Center walls
-
-    // General line boundary logic
-        let lines = [];
-        // Define the 4 normal walls as lines
-        lines.push(getLine(0,0,0,1));
-        lines.push(genLine(0,0,1,0));
-        lines.push(genLine(1,0,1,1));
-        lines.push(genLine(0,1,1,1));
-        // Define the 2 corner walls as lines
-        lines.push(getLine(0,0.5,0.15,1));
-        lines.push(getLine(0.85,1,1,0.5));
-        // Define the 2 central walls as lines
-        lines.push(getLine(0.4,1,0.5,0.75));
-        lines.push(getLine(0.5,0.75,0.6,1));
-
-        // Define laws for detecting collision with general line
-        handleGeneralLineCollision(piece, lines);
-}
-
-function generatePieceParameters(n) {
-    let result = [];
-    let idCount = 0;
-    for (let x = 0; x < n; x++){
-        result.push({
-            id: idCount,
-            x: Math.random(),
-            y: Math.random(),
-            dx: Math.random(),
-            dy: Math.random(),
-            radius: 0.02
-        })
-        idCount += 1;
+function applyGravity() {
+    for (let obj of objArray) {
+        if (obj.onGround() == false) {
+            obj.dy += 0.29;
+        }   
     }
-    return result;
 }
+
+function applyDrag() {
+    for (let obj of objArray) {
+        obj.dx *= 0.99;
+        obj.dy *= 0.99;
+    }
+}
+
+function moveObjects() {
+    for (let obj of objArray) {
+        obj.x += obj.dx;
+        obj.y += obj.dy;
+    }    
+}
+
+function drawObjects() {
+    for (let obj of objArray) {
+        obj.draw();
+    }
+}
+
 
 export default Index;
