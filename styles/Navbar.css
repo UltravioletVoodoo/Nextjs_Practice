@@ -1,5 +1,8 @@
 .navbar {
     background-color: #282828;
+    height: 10vh;
+    min-height: 35px;
+    top: 0;
 }
 .navbar-section{
     text-align: center;

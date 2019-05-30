@@ -3,7 +3,7 @@ import "../styles/Navbar.css";
 const Navbar = () => (
     <div id="navbar" className="container">
         <div className="columns">
-            <div className="navbar column col-12 col-mx-auto">
+            <div className="navbar column col-12">
                 <section className="navbar navbar-section">
                     <div className="col-3">
                         <a href="/" className="btn btn-link">Home</a>

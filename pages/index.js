@@ -4,6 +4,7 @@ import { useInterval } from "../js/Hooks";
 import "../styles/index.css";
 import { randInRange } from "../js/Util";
 import { Ball, distance, distanceNextFrame } from "../js/Ball";
+import Footer from "../components/Footer";
 
 
 // Globals
@@ -34,11 +35,7 @@ const Index = () => {
     return (
         <Base>
             <canvas id="splashCanvas" width={width} height={height}></canvas>
-            <div className="github">
-                <a href="https://github.com/UltravioletVoodoo/Personal_Website" target="_blank">
-                    <img src="/static/img/GitHub-Mark-32px.png"></img>
-                </a>
-            </div>
+            <Footer />
         </Base>
     );
 };
@@ -46,7 +43,7 @@ const Index = () => {
 function init(setDimensions) {
     function resize() {
         width = window.innerWidth;
-        height = (window.innerHeight - document.getElementById("navbar").offsetHeight) * 0.85;
+        height = (window.innerHeight - document.getElementById("navbar").offsetHeight - document.getElementById("footer").offsetHeight);
         setDimensions({width: width, height: height});
     }
     resize();
@@ -64,7 +61,7 @@ function init(setDimensions) {
 
 
 function draw() {
-        if(clearCanv) ctx.clearRect(0, 0, width, height);
+        if(clearCanv) clearCanvas();
 
         if (!paused) {
             arrowControls();
@@ -79,6 +76,10 @@ function draw() {
         staticCollision();
         ballCollision();
         requestAnimationFrame(draw);
+}
+
+function clearCanvas() {
+    ctx.clearRect(0, 0, width, height);
 }
 
 function keyDownHandler(event) {
@@ -108,6 +109,7 @@ function keyDownHandler(event) {
             break;
         case 82: //r
             objArray = [];
+            clearCanvas();
             break;
         case 75: //k
             clearCanv = !clearCanv;

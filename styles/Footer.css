@@ -1,0 +1,20 @@
+#footer {
+    height: 20vh;
+    background-color: #282828;
+    top: 80vh;
+    position: absolute;
+}
+#footer div {
+    height: 100%;
+}
+.github img{
+    position: relative;
+    z-index: 1000;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+.github a:focus{
+    outline: none;
+    box-shadow: none;
+}
