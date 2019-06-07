@@ -41,7 +41,7 @@ const Index = () => {
                     <div className="footer col-12">
                         <div className="columns">
                             <div className="col-4">
-                                <ToggleBtn onClick={removeBalls} label="Clear"></ToggleBtn>
+                                <ToggleBtn className="github" onClick={removeBalls} label="Clear"></ToggleBtn>
                             </div>
                             <div className="github col-4">
                                 <a href="https://github.com/UltravioletVoodoo/Personal_Website" target="_blank">
