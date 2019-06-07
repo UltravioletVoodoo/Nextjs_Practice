@@ -1,3 +1,8 @@
-/* body{
-    overflow: hidden;
-} */
+canvas {
+    cursor: pointer;
+}
+
+ToggleBtn {
+    top: 50%;
+    left: 50%;
+}

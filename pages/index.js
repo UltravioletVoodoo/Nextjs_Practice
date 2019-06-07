@@ -2,9 +2,10 @@ import Base from "../components/Base";
 import { useEffect, useState } from "react";
 import { useInterval } from "../js/Hooks";
 import "../styles/index.css";
+import "../styles/Footer.css";
 import { randInRange } from "../js/Util";
 import { Ball, distance, distanceNextFrame } from "../js/Ball";
-import Footer from "../components/Footer";
+import { ToggleBtn } from "../components/ToggleBtn.js";
 
 
 // Globals
@@ -35,7 +36,25 @@ const Index = () => {
     return (
         <Base>
             <canvas id="splashCanvas" width={width} height={height}></canvas>
-            <Footer />
+            <div id="footer" className="container">
+                <div className="columns">
+                    <div className="footer col-12">
+                        <div className="columns">
+                            <div className="col-4">
+                                <ToggleBtn onClick={removeBalls} label="Clear"></ToggleBtn>
+                            </div>
+                            <div className="github col-4">
+                                <a href="https://github.com/UltravioletVoodoo/Personal_Website" target="_blank">
+                                    <img src="/static/img/GitHub-Mark-32px.png"></img>
+                                </a>
+                            </div>
+                            <div className="col-4">
+                                <ToggleBtn onClick={addGravityDrag} label="Gravity"></ToggleBtn>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </Base>
     );
 };
@@ -54,6 +73,7 @@ function init(setDimensions) {
     window.addEventListener("resize", resize);
     window.addEventListener("keydown", keyDownHandler);
     window.addEventListener("keyup", keyUpHandler);
+    splashCanvas.addEventListener("click", addBall);
     draw();
 
     return () => window.removeEventListener("resize", resize);
@@ -82,18 +102,30 @@ function clearCanvas() {
     ctx.clearRect(0, 0, width, height);
 }
 
+function addBall() {
+    objArray[objArray.length] = new Ball(ctx, width, height);
+}
+
+function removeBalls() {
+    objArray = [];
+    clearCanvas();
+}
+
+function addGravityDrag() {
+    gravityOn = !gravityOn;
+    dragOn = !dragOn;
+}
+
 function keyDownHandler(event) {
     switch (event.keyCode) {
         case 67: //c
-            objArray[objArray.length] = new Ball(ctx, width, height);
-            console.log("Added new ball");
+            addBall();
             break;
         case 80: //p
             paused = !paused;
             break;
         case 71: //g
-            gravityOn = !gravityOn;
-            dragOn = !dragOn;
+            addGravityDrag();
             break;
         case 65: //a
             leftHeld = true;
@@ -108,8 +140,7 @@ function keyDownHandler(event) {
             downHeld = true;
             break;
         case 82: //r
-            objArray = [];
-            clearCanvas();
+            removeBalls();
             break;
         case 75: //k
             clearCanv = !clearCanv;
