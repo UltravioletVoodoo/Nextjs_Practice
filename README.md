@@ -1,1 +1,1 @@
-# PNextjs_Practice
+# Nextjs_Practice
